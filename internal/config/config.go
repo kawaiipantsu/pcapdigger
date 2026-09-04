@@ -74,6 +74,7 @@ type Paths struct {
 	DataDir    string // Home/data (mmdb files, manifest)
 	CacheDir   string // Home/cache
 	WHOISDir   string // Home/cache/whois
+	TLSKeysDir string // Home/tls (keylog/RSA-key/PSK files for TLS decryption)
 }
 
 // ResolvePaths computes Paths, honoring PCAPDIGGER_HOME as an override for
@@ -93,12 +94,13 @@ func ResolvePaths() (Paths, error) {
 		DataDir:    filepath.Join(root, "data"),
 		CacheDir:   filepath.Join(root, "cache"),
 		WHOISDir:   filepath.Join(root, "cache", "whois"),
+		TLSKeysDir: filepath.Join(root, "tls"),
 	}, nil
 }
 
 // EnsureDirs creates every directory pcapdigger needs, if missing.
 func (p Paths) EnsureDirs() error {
-	for _, d := range []string{p.Home, p.DataDir, p.CacheDir, p.WHOISDir} {
+	for _, d := range []string{p.Home, p.DataDir, p.CacheDir, p.WHOISDir, p.TLSKeysDir} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			return fmt.Errorf("create %s: %w", d, err)
 		}

@@ -22,6 +22,7 @@ type BuildInput struct {
 	DiagramPath string
 	GeoIPNote   string
 	WHOISNote   string
+	TLSNote     string
 }
 
 // Build assembles the final format/persona-agnostic Report.
@@ -43,6 +44,7 @@ func Build(in BuildInput) *Report {
 		DiagramPath: in.DiagramPath,
 		GeoIPNote:   in.GeoIPNote,
 		WHOISNote:   in.WHOISNote,
+		TLSNote:     in.TLSNote,
 	}
 
 	for _, p := range sum.ProtocolMix {
@@ -93,6 +95,8 @@ func Build(in BuildInput) *Report {
 		if fl.TLS != nil {
 			mf.TLSVer = fl.TLS.Version
 			mf.TLSSNI = fl.TLS.SNI
+			mf.TLSDecrypted = fl.TLS.Decrypted
+			mf.TLSKeySource = fl.TLS.KeySource
 		}
 		r.Flows = append(r.Flows, mf)
 	}

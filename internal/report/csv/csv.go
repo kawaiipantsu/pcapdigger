@@ -28,7 +28,7 @@ func WriteNetwork(r *model.Report, outDir, baseName string) ([]string, error) {
 	paths = append(paths, p)
 
 	p, err = writeTable(outDir, baseName, "network-flows", []string{
-		"protocol", "app_protocol", "host_a", "port_a", "host_b", "port_b", "packets_a_to_b", "packets_b_to_a", "bytes_a_to_b", "bytes_b_to_a", "tls_version", "tls_sni", "first_seen", "last_seen",
+		"protocol", "app_protocol", "host_a", "port_a", "host_b", "port_b", "packets_a_to_b", "packets_b_to_a", "bytes_a_to_b", "bytes_b_to_a", "tls_version", "tls_sni", "tls_decrypted", "tls_key_source", "first_seen", "last_seen",
 	}, flowRows(v.Flows))
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func flowRows(flows []model.Flow) [][]string {
 			f.Protocol, f.AppProto, f.HostA, strconv.Itoa(f.PortA), f.HostB, strconv.Itoa(f.PortB),
 			strconv.FormatUint(f.PacketsAB, 10), strconv.FormatUint(f.PacketsBA, 10),
 			strconv.FormatUint(f.BytesAB, 10), strconv.FormatUint(f.BytesBA, 10),
-			f.TLSVer, f.TLSSNI, fmtTime(f.FirstSeen), fmtTime(f.LastSeen),
+			f.TLSVer, f.TLSSNI, strconv.FormatBool(f.TLSDecrypted), f.TLSKeySource, fmtTime(f.FirstSeen), fmtTime(f.LastSeen),
 		})
 	}
 	return rows

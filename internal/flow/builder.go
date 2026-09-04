@@ -9,6 +9,7 @@ import (
 
 	"pcapdigger/internal/pcapdata"
 	"pcapdigger/internal/proto"
+	"pcapdigger/internal/tlskeys"
 )
 
 // Builder consumes a decoded packet stream and produces a Result.
@@ -21,6 +22,13 @@ type Builder struct {
 	// packet reaches the resolved address. Applied whenever host() is
 	// called for that IP, regardless of processing order.
 	pendingNames map[string]map[string]bool
+
+	// tlsKeys/tlsConns support best-effort TLS decryption; both stay nil
+	// unless EnableTLSDecryption is called, in which case TCP payloads
+	// that look like TLS get reassembled per-connection and fed to a
+	// tlssession.Session.
+	tlsKeys  *tlskeys.Store
+	tlsConns map[string]*tlsConnState
 }
 
 // New creates a Builder for a capture with the given file name/link type.
@@ -85,10 +93,12 @@ func (b *Builder) Add(pkt pcapdata.Packet) {
 	var srcPort, dstPort int
 	var payload []byte
 	var flagBits string
+	var tcpLayer *layers.TCP
 
 	switch ipProto {
 	case "TCP":
 		if tcp, ok := p.Layer(layers.LayerTypeTCP).(*layers.TCP); ok {
+			tcpLayer = tcp
 			srcPort, dstPort = int(tcp.SrcPort), int(tcp.DstPort)
 			payload = tcp.Payload
 			flagBits = tcpFlagString(tcp)
@@ -121,10 +131,18 @@ func (b *Builder) Add(pkt pcapdata.Packet) {
 			dHost.addPort(dstPort)
 		}
 	}
-	b.updateFlow(fl, srcIP, ts, plen, flagBits)
+	b.updateFlow(fl, srcIP, srcPort, ts, plen, flagBits)
 
 	if ipProto == "TCP" && len(payload) > 0 {
 		b.inspectTCPPayload(fl, sHost, dHost, srcIP, dstIP, srcPort, dstPort, ts, payload)
+		if b.tlsKeys != nil {
+			// The flow itself is created by the (payload-less) SYN, so the
+			// ClientHello -- the trigger for tracking a flow as TLS -- is
+			// never the packet that creates the flow; check on every
+			// payload-bearing packet instead. maybeStartTLS is idempotent.
+			b.maybeStartTLS(fl, srcIP, srcPort, payload)
+			b.feedTLS(fl, srcIP, tcpLayer, ts)
+		}
 	}
 	if ipProto == "UDP" && len(payload) > 0 && (srcPort == 53 || dstPort == 53) {
 		b.inspectDNS(srcIP, dstIP, ts, payload, sHost, dHost)
@@ -225,8 +243,8 @@ func (b *Builder) flow(proto_, ipA, ipB string, portA, portB int, ts time.Time) 
 	return fl, false
 }
 
-func (b *Builder) updateFlow(fl *Flow, srcIP string, ts time.Time, plen uint64, flagBits string) {
-	if srcIP == fl.IPA {
+func (b *Builder) updateFlow(fl *Flow, srcIP string, srcPort int, ts time.Time, plen uint64, flagBits string) {
+	if fl.IsSideA(srcIP, srcPort) {
 		fl.PacketsAB++
 		fl.BytesAB += plen
 		fl.observeInterval(ts)

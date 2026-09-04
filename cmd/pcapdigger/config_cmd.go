@@ -61,6 +61,7 @@ func newConfigShowCmd() *cobra.Command {
 			fmt.Printf("cache dir:     %s\n", p.CacheDir)
 			fmt.Printf("geo city db:   %s\n", p.GeoCityDBPath())
 			fmt.Printf("geo asn db:    %s\n", p.GeoASNDBPath())
+			fmt.Printf("tls keys dir:  %s (drop keylog/*.log, RSA *.pem|*.key, or *.psk files here)\n", p.TLSKeysDir)
 			fmt.Println()
 			fmt.Printf("maxmind.account_id:   %s\n", mask(cfg.MaxMind.AccountID))
 			fmt.Printf("maxmind.license_key:  %s\n", mask(cfg.MaxMind.LicenseKey))

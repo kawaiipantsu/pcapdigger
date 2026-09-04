@@ -37,6 +37,8 @@ type TLSInfo struct {
 	CipherSuites []uint16
 	WeakCipher   bool
 	Cert         *CertInfo
+	Decrypted    bool   // true if a matching key (keylog/RSA/PSK) was found and traffic was decrypted
+	KeySource    string // "keylog", "rsa-key", or "psk"; empty if not decrypted
 }
 
 // CertInfo summarizes a parsed X.509 server certificate.
@@ -82,6 +84,14 @@ type Flow struct {
 	iaMean  float64
 	iaM2    float64
 	lastAB  time.Time
+}
+
+// IsSideA reports whether (ip, port) is this flow's "A" side. Matching on
+// IP alone is not enough: on loopback captures (or any hairpin/NAT
+// scenario) both sides can share the same IP address, so the port must
+// also match to tell the two directions apart.
+func (f *Flow) IsSideA(ip string, port int) bool {
+	return ip == f.IPA && port == f.PortA
 }
 
 // IntervalStats returns the count, mean and coefficient of variation of

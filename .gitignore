@@ -3,8 +3,8 @@
 *.mmdb
 *.pcap
 *.pcapng
-!testdata/*.pcap
-!testdata/*.pcapng
+!testdata/**/*.pcap
+!testdata/**/*.pcapng
 *.test
 *.out
 .DS_Store

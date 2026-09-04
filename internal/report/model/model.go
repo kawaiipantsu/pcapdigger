@@ -66,20 +66,22 @@ type Host struct {
 
 // Flow is one conversation row.
 type Flow struct {
-	Protocol  string    `json:"protocol"`
-	AppProto  string    `json:"app_protocol,omitempty"`
-	HostA     string    `json:"host_a"`
-	PortA     int       `json:"port_a"`
-	HostB     string    `json:"host_b"`
-	PortB     int       `json:"port_b"`
-	PacketsAB uint64    `json:"packets_a_to_b"`
-	PacketsBA uint64    `json:"packets_b_to_a"`
-	BytesAB   uint64    `json:"bytes_a_to_b"`
-	BytesBA   uint64    `json:"bytes_b_to_a"`
-	FirstSeen time.Time `json:"first_seen"`
-	LastSeen  time.Time `json:"last_seen"`
-	TLSVer    string    `json:"tls_version,omitempty"`
-	TLSSNI    string    `json:"tls_sni,omitempty"`
+	Protocol     string    `json:"protocol"`
+	AppProto     string    `json:"app_protocol,omitempty"`
+	HostA        string    `json:"host_a"`
+	PortA        int       `json:"port_a"`
+	HostB        string    `json:"host_b"`
+	PortB        int       `json:"port_b"`
+	PacketsAB    uint64    `json:"packets_a_to_b"`
+	PacketsBA    uint64    `json:"packets_b_to_a"`
+	BytesAB      uint64    `json:"bytes_a_to_b"`
+	BytesBA      uint64    `json:"bytes_b_to_a"`
+	FirstSeen    time.Time `json:"first_seen"`
+	LastSeen     time.Time `json:"last_seen"`
+	TLSVer       string    `json:"tls_version,omitempty"`
+	TLSSNI       string    `json:"tls_sni,omitempty"`
+	TLSDecrypted bool      `json:"tls_decrypted,omitempty"`
+	TLSKeySource string    `json:"tls_key_source,omitempty"`
 }
 
 // Finding is one security detector result, with a stable ID for
@@ -149,6 +151,7 @@ type Report struct {
 	DiagramPath string          `json:"diagram_path,omitempty"`
 	WHOISNote   string          `json:"whois_note,omitempty"`
 	GeoIPNote   string          `json:"geoip_note,omitempty"`
+	TLSNote     string          `json:"tls_note,omitempty"`
 }
 
 // NameCountPort pairs a port with an occurrence count.

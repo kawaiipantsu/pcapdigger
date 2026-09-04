@@ -19,6 +19,7 @@ type NetworkView struct {
 	DiagramPath string          `json:"diagram_path,omitempty"`
 	GeoIPNote   string          `json:"geoip_note,omitempty"`
 	WHOISNote   string          `json:"whois_note,omitempty"`
+	TLSNote     string          `json:"tls_note,omitempty"`
 }
 
 // Network builds the network-engineering view.
@@ -26,7 +27,7 @@ func (r *Report) Network() NetworkView {
 	return NetworkView{
 		Meta: r.Meta, ProtocolMix: r.ProtocolMix, AppProtoMix: r.AppProtoMix,
 		TopTalkers: r.TopTalkers, TopPorts: r.TopPorts, Hosts: r.Hosts, Flows: r.Flows,
-		DNS: r.DNS, TLS: r.TLS, DiagramPath: r.DiagramPath, GeoIPNote: r.GeoIPNote, WHOISNote: r.WHOISNote,
+		DNS: r.DNS, TLS: r.TLS, DiagramPath: r.DiagramPath, GeoIPNote: r.GeoIPNote, WHOISNote: r.WHOISNote, TLSNote: r.TLSNote,
 	}
 }
 
@@ -38,11 +39,12 @@ type SecurityView struct {
 	FlaggedHosts []Host         `json:"flagged_hosts"`
 	DiagramPath  string         `json:"diagram_path,omitempty"`
 	WHOISNote    string         `json:"whois_note,omitempty"`
+	TLSNote      string         `json:"tls_note,omitempty"`
 }
 
 // Security builds the security-architect view.
 func (r *Report) Security() SecurityView {
-	sv := SecurityView{Meta: r.Meta, Risk: r.Risk, Findings: r.Findings, DiagramPath: r.DiagramPath, WHOISNote: r.WHOISNote}
+	sv := SecurityView{Meta: r.Meta, Risk: r.Risk, Findings: r.Findings, DiagramPath: r.DiagramPath, WHOISNote: r.WHOISNote, TLSNote: r.TLSNote}
 	for _, h := range r.Hosts {
 		if len(h.FindingIDs) > 0 {
 			sv.FlaggedHosts = append(sv.FlaggedHosts, h)

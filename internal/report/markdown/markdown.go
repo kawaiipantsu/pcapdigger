@@ -68,9 +68,13 @@ func WriteNetwork(r *model.Report, outDir, baseName string) ([]string, error) {
 		flows = flows[:200]
 		sb.WriteString("_Showing the 200 busiest conversations by bytes._\n\n")
 	}
-	writeTable(&sb, []string{"Proto", "App", "Host A", "Port A", "Host B", "Port B", "Bytes A→B", "Bytes B→A", "TLS", "SNI"},
+	writeTable(&sb, []string{"Proto", "App", "Host A", "Port A", "Host B", "Port B", "Bytes A→B", "Bytes B→A", "TLS", "SNI", "Decrypted"},
 		mapRows(flows, func(f model.Flow) []string {
-			return []string{f.Protocol, f.AppProto, f.HostA, itoa(f.PortA), f.HostB, itoa(f.PortB), utoa(f.BytesAB), utoa(f.BytesBA), f.TLSVer, f.TLSSNI}
+			decrypted := ""
+			if f.TLSDecrypted {
+				decrypted = "yes (" + f.TLSKeySource + ")"
+			}
+			return []string{f.Protocol, f.AppProto, f.HostA, itoa(f.PortA), f.HostB, itoa(f.PortB), utoa(f.BytesAB), utoa(f.BytesBA), f.TLSVer, f.TLSSNI, decrypted}
 		}))
 
 	sb.WriteString("\n## DNS Summary\n\n")
@@ -105,6 +109,9 @@ func WriteNetwork(r *model.Report, outDir, baseName string) ([]string, error) {
 	}
 	if v.WHOISNote != "" {
 		fmt.Fprintf(&sb, "\n> **Note:** %s\n", v.WHOISNote)
+	}
+	if v.TLSNote != "" {
+		fmt.Fprintf(&sb, "\n> **Note:** %s\n", v.TLSNote)
 	}
 
 	return write(outDir, baseName+"-network-report.md", sb.String())
@@ -168,6 +175,9 @@ func WriteSecurity(r *model.Report, outDir, baseName string) ([]string, error) {
 
 	if v.WHOISNote != "" {
 		fmt.Fprintf(&sb, "\n> **Note:** %s\n", v.WHOISNote)
+	}
+	if v.TLSNote != "" {
+		fmt.Fprintf(&sb, "\n> **Note:** %s\n", v.TLSNote)
 	}
 
 	return write(outDir, baseName+"-security-report.md", sb.String())

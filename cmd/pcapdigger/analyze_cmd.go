@@ -22,6 +22,7 @@ import (
 	mdreport "pcapdigger/internal/report/markdown"
 	"pcapdigger/internal/report/model"
 	"pcapdigger/internal/security"
+	"pcapdigger/internal/tlskeys"
 )
 
 var allFormats = []string{"json", "csv", "markdown"}
@@ -38,6 +39,7 @@ type analyzeOptions struct {
 	iocFile    string
 	topN       int
 	verbose    bool
+	noDecrypt  bool
 }
 
 func newAnalyzeCmd() *cobra.Command {
@@ -64,6 +66,7 @@ func newAnalyzeCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.iocFile, "ioc-file", "", "optional IOC blocklist file (one IP or domain per line, optionally \"value,description\")")
 	cmd.Flags().IntVar(&opts.topN, "top-n", 20, "row limit for top-talkers/top-ports/top-DNS tables")
 	cmd.Flags().BoolVarP(&opts.verbose, "verbose", "v", false, "print progress to stderr")
+	cmd.Flags().BoolVar(&opts.noDecrypt, "no-decrypt", false, "disable TLS decryption even if keys are available in ~/.config/pcapdigger/tls")
 	return cmd
 }
 
@@ -103,6 +106,22 @@ func runAnalyze(capturePath string, opts *analyzeOptions) error {
 	defer reader.Close()
 
 	builder := flow.New(filepath.Base(capturePath), reader.LinkType().String())
+	tlsNote := ""
+	if !opts.noDecrypt {
+		keys, err := tlskeys.Load(paths.TLSKeysDir)
+		if err != nil {
+			return fmt.Errorf("load TLS keys: %w", err)
+		}
+		if keys.Empty() {
+			tlsNote = "No TLS decryption secrets found in ~/.config/pcapdigger/tls (a keylog file, an RSA private key, or a PSK file) — encrypted flows were not decrypted."
+		} else {
+			builder.EnableTLSDecryption(keys)
+			logf("loaded TLS decryption secrets: %d keylog sessions, %d RSA keys, %d PSKs", len(keys.Keylog), len(keys.RSAKeys), len(keys.PSKs))
+		}
+	} else {
+		tlsNote = "TLS decryption was disabled for this run (--no-decrypt)."
+	}
+
 	packetCount := 0
 	if err := reader.Walk(func(p pcapdata.Packet) error {
 		builder.Add(p)
@@ -113,6 +132,10 @@ func runAnalyze(capturePath string, opts *analyzeOptions) error {
 	}
 	result := builder.Result()
 	logf("processed %d packets, %d hosts, %d flows", packetCount, len(result.Hosts), len(result.Flows))
+	if decrypted := countDecryptedFlows(result); decrypted > 0 {
+		logf("decrypted %d TLS flow(s)", decrypted)
+		tlsNote = fmt.Sprintf("%d TLS flow(s) were decrypted using locally-supplied keys.", decrypted)
+	}
 
 	summary := analyze.Compute(result, opts.topN)
 
@@ -136,7 +159,7 @@ func runAnalyze(capturePath string, opts *analyzeOptions) error {
 
 	report := model.Build(model.BuildInput{
 		Result: result, Summary: summary, Findings: findings,
-		Geo: geoLookup, WHOIS: whoisRecords, GeoIPNote: geoNote, WHOISNote: whoisNote,
+		Geo: geoLookup, WHOIS: whoisRecords, GeoIPNote: geoNote, WHOISNote: whoisNote, TLSNote: tlsNote,
 	})
 
 	if opts.diagram {
@@ -178,6 +201,16 @@ func setupGeoIP(paths config.Paths, cfg config.Config, opts *analyzeOptions, log
 		return lookup, "No GeoIP database installed — run `pcapdigger update-db` (requires a MaxMind license key set via `pcapdigger config set maxmind.license_key ...`) to enable country/ASN enrichment."
 	}
 	return lookup, ""
+}
+
+func countDecryptedFlows(result *flow.Result) int {
+	n := 0
+	for _, fl := range result.Flows {
+		if fl.TLS != nil && fl.TLS.Decrypted {
+			n++
+		}
+	}
+	return n
 }
 
 func runWHOIS(paths config.Paths, cfg config.Config, opts *analyzeOptions, summary *analyze.Summary, logf func(string, ...interface{})) (map[string]*whois.Record, string) {
