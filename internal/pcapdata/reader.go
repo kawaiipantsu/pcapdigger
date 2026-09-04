@@ -96,11 +96,17 @@ func (r *Reader) Next() (Packet, error) {
 	if err != nil {
 		return Packet{}, err
 	}
+	// DecodeStreamsAsDatagrams is deliberately left false: it makes
+	// gopacket speculatively decode TCP payloads as app-layer protocols
+	// (e.g. TLS on port 443) one segment at a time with no stream
+	// reassembly, which misfires constantly on any real capture (a single
+	// TLS record routinely spans several TCP segments). pcapdigger does
+	// its own best-effort TLS/DNS/HTTP parsing directly off tcp.Payload,
+	// so nothing here depends on that heuristic decode path.
 	pkt := gopacket.NewPacket(data, r.linkType, gopacket.DecodeOptions{
-		Lazy:                     true,
-		NoCopy:                   true,
-		SkipDecodeRecovery:       true,
-		DecodeStreamsAsDatagrams: true,
+		Lazy:               true,
+		NoCopy:             true,
+		SkipDecodeRecovery: true,
 	})
 	return Packet{Data: pkt, Info: ci}, nil
 }

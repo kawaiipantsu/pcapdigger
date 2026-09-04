@@ -6,7 +6,12 @@ const (
 	exfilMinBytes       = 10 * 1024 * 1024 // 10 MiB
 	exfilAsymmetryRatio = 10.0
 	exfilDNSAnswerBytes = 512
-	icmpCovertAvgBytes  = 100 // normal echo payload is ~56-64 bytes
+	// Flow byte counters are full on-wire frame sizes (Ethernet+IP+ICMP
+	// headers included), not just the ICMP echo payload. A stock ping
+	// already produces ~98-110 bytes of frame for its default 56-64 byte
+	// payload, so the threshold has to clear that plus real headroom
+	// before it means anything -- otherwise every ordinary ping trips it.
+	icmpCovertAvgBytes = 250
 )
 
 // ExfilDetector flags asymmetric large outbound transfers to external

@@ -55,7 +55,7 @@ func buildClientHello(sni string, ciphers []uint16) []byte {
 }
 
 func TestParseClientHello(t *testing.T) {
-	ciphers := []uint16{0x1301, 0x1302, 0x002f}
+	ciphers := []uint16{0x1301, 0x1302, 0x0005}
 	raw := buildClientHello("example.com", ciphers)
 
 	ch, err := ParseClientHello(raw)
@@ -76,8 +76,11 @@ func TestParseClientHello(t *testing.T) {
 			t.Errorf("CipherSuites[%d] = %#04x, want %#04x", i, ch.CipherSuites[i], c)
 		}
 	}
-	if _, weak := WeakCipherSuites[0x002f]; !weak {
-		t.Errorf("expected 0x002f to be flagged as a weak cipher suite")
+	if _, weak := WeakCipherSuites[0x0005]; !weak {
+		t.Errorf("expected 0x0005 (RC4) to be flagged as a weak cipher suite")
+	}
+	if _, weak := WeakCipherSuites[0x002f]; weak {
+		t.Errorf("0x002f (AES-128-CBC) is a common compatibility fallback, not a weak cipher; flagging it is a false-positive source")
 	}
 }
 

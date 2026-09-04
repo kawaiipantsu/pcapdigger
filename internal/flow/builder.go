@@ -100,9 +100,27 @@ func (b *Builder) Add(pkt pcapdata.Packet) {
 		}
 	}
 
-	dHost.addPort(dstPort)
-
-	fl := b.flow(ipProto, srcIP, dstIP, srcPort, dstPort, ts)
+	fl, isNewFlow := b.flow(ipProto, srcIP, dstIP, srcPort, dstPort, ts)
+	if isNewFlow {
+		// Attribute the contacted port to whichever side is actually the
+		// server, based on the very first captured packet of this flow --
+		// doing this unconditionally on every packet would also record the
+		// client's own ephemeral port as "open" on every reply it
+		// receives, which is not a port it exposes at all.
+		switch {
+		case ipProto == "TCP" && flagBits == "SA":
+			// This flow's first captured packet is a SYN-ACK, meaning the
+			// connection's SYN predates the capture window and the real
+			// server is the current packet's source, not destination.
+			sHost.addPort(srcPort)
+		case ipProto == "TCP" && flagBits != "S":
+			// Neither a SYN nor a SYN-ACK: the handshake wasn't captured
+			// at all, so which side is the server is unknown -- skip
+			// rather than guess.
+		default:
+			dHost.addPort(dstPort)
+		}
+	}
 	b.updateFlow(fl, srcIP, ts, plen, flagBits)
 
 	if ipProto == "TCP" && len(payload) > 0 {
@@ -183,7 +201,7 @@ func (h *Host) addPort(p int) {
 	}
 }
 
-func (b *Builder) flow(proto_, ipA, ipB string, portA, portB int, ts time.Time) *Flow {
+func (b *Builder) flow(proto_, ipA, ipB string, portA, portB int, ts time.Time) (*Flow, bool) {
 	key := flowKey(proto_, ipA, ipB, portA, portB)
 	fl, ok := b.res.Flows[key]
 	if !ok {
@@ -199,12 +217,12 @@ func (b *Builder) flow(proto_, ipA, ipB string, portA, portB int, ts time.Time) 
 			LastSeen:  ts,
 		}
 		b.res.Flows[key] = fl
-		return fl
+		return fl, true
 	}
 	if ts.After(fl.LastSeen) {
 		fl.LastSeen = ts
 	}
-	return fl
+	return fl, false
 }
 
 func (b *Builder) updateFlow(fl *Flow, srcIP string, ts time.Time, plen uint64, flagBits string) {

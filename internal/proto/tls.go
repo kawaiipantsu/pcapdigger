@@ -221,7 +221,14 @@ func ParseServerCertificates(b []byte) (*ServerCertificates, error) {
 	return out, nil
 }
 
-// WeakCipherSuites lists suite IDs considered weak/export-grade/deprecated.
+// WeakCipherSuites lists suite IDs considered broken/export-grade: NULL
+// (no encryption), RC4/DES/3DES (cryptographically broken or deprecated by
+// every major browser and CA/B Forum guidance). Deliberately excludes
+// merely "older" AEAD-less suites like TLS_RSA_WITH_AES_128_CBC_SHA
+// (0x002f) -- nearly every modern client still *offers* those as a
+// compatibility fallback in ClientHello even though it will negotiate a
+// modern suite, so flagging them on offer alone (rather than on what the
+// server actually selected) is pure false-positive noise.
 var WeakCipherSuites = map[uint16]string{
 	0x0000: "TLS_NULL_WITH_NULL_NULL",
 	0x0001: "TLS_RSA_WITH_NULL_MD5",
@@ -232,5 +239,4 @@ var WeakCipherSuites = map[uint16]string{
 	0x000a: "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
 	0x0015: "TLS_DHE_RSA_WITH_DES_CBC_SHA",
 	0x0016: "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
-	0x002f: "TLS_RSA_WITH_AES_128_CBC_SHA", // exportable-era, weak by modern std
 }

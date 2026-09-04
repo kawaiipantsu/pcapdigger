@@ -7,18 +7,18 @@ import (
 
 // NetworkView is the full technical view for the network-engineering report.
 type NetworkView struct {
-	Meta        Meta
-	ProtocolMix []ProtoStat
-	AppProtoMix []ProtoStat
-	TopTalkers  []Host
-	TopPorts    []NameCountPort
-	Hosts       []Host
-	Flows       []Flow
-	DNS         DNSSummary
-	TLS         TLSSummary
-	DiagramPath string
-	GeoIPNote   string
-	WHOISNote   string
+	Meta        Meta            `json:"meta"`
+	ProtocolMix []ProtoStat     `json:"protocol_mix"`
+	AppProtoMix []ProtoStat     `json:"app_protocol_mix"`
+	TopTalkers  []Host          `json:"top_talkers"`
+	TopPorts    []NameCountPort `json:"top_ports"`
+	Hosts       []Host          `json:"hosts"`
+	Flows       []Flow          `json:"flows"`
+	DNS         DNSSummary      `json:"dns"`
+	TLS         TLSSummary      `json:"tls"`
+	DiagramPath string          `json:"diagram_path,omitempty"`
+	GeoIPNote   string          `json:"geoip_note,omitempty"`
+	WHOISNote   string          `json:"whois_note,omitempty"`
 }
 
 // Network builds the network-engineering view.
@@ -32,12 +32,12 @@ func (r *Report) Network() NetworkView {
 
 // SecurityView is the findings-centric view for the security-architect report.
 type SecurityView struct {
-	Meta         Meta
-	Risk         RiskAssessment
-	Findings     []Finding
-	FlaggedHosts []Host
-	DiagramPath  string
-	WHOISNote    string
+	Meta         Meta           `json:"meta"`
+	Risk         RiskAssessment `json:"risk"`
+	Findings     []Finding      `json:"findings"`
+	FlaggedHosts []Host         `json:"flagged_hosts"`
+	DiagramPath  string         `json:"diagram_path,omitempty"`
+	WHOISNote    string         `json:"whois_note,omitempty"`
 }
 
 // Security builds the security-architect view.
@@ -53,16 +53,16 @@ func (r *Report) Security() SecurityView {
 
 // ExecutiveView is the condensed, plain-language view for leadership.
 type ExecutiveView struct {
-	SourceFile        string
-	GeneratedAt       time.Time
-	DurationSecs      float64
-	TotalPackets      int
-	TotalBytes        uint64
-	HostCount         int
-	ExternalHostCount int
-	Risk              RiskAssessment
-	TopFindings       []Finding
-	Highlights        []string
+	SourceFile        string         `json:"source_file"`
+	GeneratedAt       time.Time      `json:"generated_at"`
+	DurationSecs      float64        `json:"duration_seconds"`
+	TotalPackets      int            `json:"total_packets"`
+	TotalBytes        uint64         `json:"total_bytes"`
+	HostCount         int            `json:"host_count"`
+	ExternalHostCount int            `json:"external_host_count"`
+	Risk              RiskAssessment `json:"risk"`
+	TopFindings       []Finding      `json:"top_findings"`
+	Highlights        []string       `json:"highlights"`
 }
 
 // Executive builds the executive view.
