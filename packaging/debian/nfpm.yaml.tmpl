@@ -1,0 +1,24 @@
+name: pcapdigger
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: net
+priority: optional
+maintainer: kawaiipantsu <12233528+kawaiipantsu@users.noreply.github.com>
+homepage: https://thugs.red/projects/pcapdigger
+description: |
+  Thorough PCAP analysis and multi-audience reporting CLI.
+  Loads a pcap/pcapng capture, reconstructs hosts and conversations,
+  runs a broad set of security heuristics (scans, spoofing, plaintext
+  credentials, weak TLS, DNS/exfil/beaconing anomalies), enriches hosts
+  with GeoIP/ASN/WHOIS, and generates network-engineering, security-
+  architect, and executive reports in JSON, CSV, and Markdown, plus an
+  SVG flow diagram.
+license: MIT
+contents:
+  - src: ${BINARY}
+    dst: /usr/bin/pcapdigger
+    file_info:
+      mode: 0755
+  - src: ${PROJECT_ROOT}/README.md
+    dst: /usr/share/doc/pcapdigger/README.md
